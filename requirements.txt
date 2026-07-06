@@ -1,0 +1,20 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  SiraSafe AI — Python Requirements
+#  IBM Call for Code 2026 · Streamlit Community Cloud Deployment
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Core web framework ────────────────────────────────────────────────────────
+streamlit>=1.35.0
+
+# ── Data & image processing ───────────────────────────────────────────────────
+pandas>=2.0.0
+Pillow>=10.3.0
+
+# ── IBM watsonx.ai SDK (production — graceful no-op when credentials absent) ──
+ibm-watsonx-ai>=1.1.2
+
+# ── OCR engine (optional — app falls back to demo simulation if unavailable) ──
+pytesseract>=0.3.10
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+python-dotenv>=1.0.1
