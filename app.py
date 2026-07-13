@@ -251,8 +251,25 @@ with st.sidebar:
     st.divider()
     st.markdown("**☁️ IBM watsonx.ai Connection**")
     
-    # Forced to False to ensure simulator is always active and bypasses any invalid/empty keys
-    has_watsonx_env = False
+    import os
+    
+    # Dynamic check of the watsonx credentials (supports both with/without underscore for robust compatibility)
+    raw_apikey = os.environ.get("WATSONX_APIKEY") or os.environ.get("WATSONX_API_KEY") or ""
+    raw_project_id = os.environ.get("PROJECT_ID") or os.environ.get("WATSONX_PROJECT_ID") or ""
+    
+    watsonx_apikey = raw_apikey.strip()
+    project_id = raw_project_id.strip()
+    
+    # Template placeholder values to ignore
+    invalid_keywords = ["your_ibm_api_key_here", "your_project_id_here", "your-", "your_", "example", "placeholder"]
+    
+    def is_valid_cred(val):
+        if not val:
+            return False
+        val_lower = val.lower()
+        return not any(kw in val_lower for kw in invalid_keywords)
+        
+    has_watsonx_env = is_valid_cred(watsonx_apikey) and is_valid_cred(project_id)
     
     if has_watsonx_env:
         st.success("🟢 Live watsonx.ai API Active", icon="✅")
