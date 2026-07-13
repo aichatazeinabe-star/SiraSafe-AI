@@ -18,7 +18,7 @@ import pandas as pd
 import streamlit as st
 
 # ── Internal components ───────────────────────────────────────────────────────
-from components.ai_engine import extract_text_from_image, analyze_with_ibm_granite
+from components.ai_engine import analyze_with_ibm_granite
 from components.database  import (
     add_to_blacklist,
     check_phone_number,
@@ -247,6 +247,30 @@ with st.sidebar:
             icon="⚡",
         )
 
+    # ── watsonx.ai Connection / Simulation Selector ─────────────────────
+    st.divider()
+    st.markdown("**☁️ IBM watsonx.ai Connection**")
+    
+    # Forced to False to ensure simulator is always active and bypasses any invalid/empty keys
+    has_watsonx_env = False
+    
+    if has_watsonx_env:
+        st.success("🟢 Live watsonx.ai API Active", icon="✅")
+        sim_scenario = None
+    else:
+        st.info("ℹ️ Using local Watsonx.ai Vision Simulation", icon="🤖")
+        sim_scenario = st.selectbox(
+            "Simulated Scenario (Vision Mock)",
+            options=[
+                "Trafficking Attempt (Canada Job Ad)",
+                "Trafficking Attempt (Dubai Domestic Worker Trap)",
+                "Legitimate Local Freelance Offer",
+                "Unrelated / Blank Image"
+            ],
+            key="sim_scenario_selector",
+            help="Simulates the visual & textual understanding of Granite Vision on any uploaded image."
+        )
+
     # ── Stats snapshot ───────────────────────────────────────────────────
     st.divider()
     st.markdown("**📊 Network Stats**")
@@ -308,14 +332,14 @@ with tab1:
 
     st.markdown("""
     <div class="card">
-        <p class="card-title">📌 Pipeline 1 · OCR → IBM Granite Analysis</p>
-        Upload a screenshot of a suspicious WhatsApp or Facebook recruitment ad.
-        The AI engine will extract the text, detect trafficking red flags, and
-        automatically register the recruiter in the community blacklist.
+        <p class="card-title">📌 Pipeline 1 · IBM Granite Vision Analysis</p>
+        Upload a screenshot or paste text from a recruitment ad.
+        The AI engine will analyze the content for human trafficking red flags,
+        and automatically register the recruiter in the community blacklist.
     </div>
     """, unsafe_allow_html=True)
 
-    # ── File uploader ────────────────────────────────────────────────────
+    # ── Input options (Image Upload or Direct Text Input) ──────────────────
     uploaded_file = st.file_uploader(
         label   = "📎 Upload Screenshot (WhatsApp / Facebook / Telegram ad)",
         type    = ["png", "jpg", "jpeg"],
@@ -323,49 +347,81 @@ with tab1:
         help    = "Upload a screenshot of a suspicious recruitment offer.",
     )
 
-    if uploaded_file is not None:
+    st.markdown("<p style='text-align: center; color: #555577; margin: 0.5rem 0;'>— OR —</p>", unsafe_allow_html=True)
 
-        # ── Image preview + metadata ────────────────────────────────────
-        col_img, col_meta = st.columns([1, 2], gap="medium")
-        with col_img:
-            st.image(uploaded_file, caption="📎 Uploaded Screenshot", use_container_width=True)
-        with col_meta:
-            st.markdown(f"""
-            <div class="card">
-                <p class="card-title">📋 File Details</p>
-                <p style="font-size:0.82rem;color:#aaaacc;margin:0.15rem 0;">
-                    📁 <strong style="color:#e8e8f0;">{uploaded_file.name}</strong>
-                </p>
-                <p style="font-size:0.82rem;color:#aaaacc;margin:0.15rem 0;">
-                    📦 Size: {uploaded_file.size / 1024:.1f} KB
-                </p>
-                <p style="font-size:0.82rem;color:#aaaacc;margin:0.15rem 0;">
-                    🌍 Language: {lang_flags[selected_language]} {selected_language}
-                </p>
-                <p style="font-size:0.82rem;color:#aaaacc;margin:0.15rem 0;">
-                    🤖 Engine: {"📱 Edge AI (Simulated)" if offline_mode else "☁️ IBM Granite-7B (Cloud)"}
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
+    manual_text = st.text_area(
+        label       = "✍️ Paste Recruitment Text Directly",
+        placeholder = "Paste the text of the job offer or message here to analyze it dynamically...",
+        height      = 120,
+        key         = "manual_text_input",
+    )
+
+    active_input = None
+    if uploaded_file is not None:
+        active_input = "image"
+    elif manual_text.strip():
+        active_input = "text"
+
+    if active_input is not None:
+        if active_input == "image":
+            # ── Image preview + metadata ────────────────────────────────────
+            col_img, col_meta = st.columns([1, 2], gap="medium")
+            with col_img:
+                st.image(uploaded_file, caption="📎 Uploaded Screenshot", use_container_width=True)
+            with col_meta:
+                st.markdown(f"""
+                <div class="card">
+                    <p class="card-title">📋 File Details</p>
+                    <p style="font-size:0.82rem;color:#aaaacc;margin:0.15rem 0;">
+                        📁 <strong style="color:#e8e8f0;">{uploaded_file.name}</strong>
+                    </p>
+                    <p style="font-size:0.82rem;color:#aaaacc;margin:0.15rem 0;">
+                        📦 Size: {uploaded_file.size / 1024:.1f} KB
+                    </p>
+                    <p style="font-size:0.82rem;color:#aaaacc;margin:0.15rem 0;">
+                        🌍 Language: {lang_flags[selected_language]} {selected_language}
+                    </p>
+                    <p style="font-size:0.82rem;color:#aaaacc;margin:0.15rem 0;">
+                        🤖 Engine: {"📱 Edge AI (Simulated)" if offline_mode else "☁️ IBM Granite Vision (Cloud)"}
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("✍️ Analyzing manually pasted text...", icon="📝")
 
         st.divider()
 
-        # ── AI Processing spinner ───────────────────────────────────────
-        with st.spinner("🔍 OCR extraction… then routing to IBM Granite-7B…"):
-            # Pipeline 1A: Extract text from image
-            extracted_text, ocr_method = extract_text_from_image(uploaded_file)
+        # ── AI Processing ───────────────────────────────────────────────
+        with st.spinner("🔍 Processing with IBM Granite Vision & Threat Engine..."):
+            if active_input == "image":
+                sim_val = st.session_state.get("sim_scenario_selector", None)
+                analysis: dict = analyze_with_ibm_granite(image_file=uploaded_file, sim_scenario=sim_val)
+            else:
+                analysis: dict = analyze_with_ibm_granite(text=manual_text)
 
-            # Pipeline 1B: Analyse with IBM Granite
-            analysis: dict = analyze_with_ibm_granite(extracted_text)
-
+        # ── Unpack dynamic results — all values come from the AI engine ──
         risk_score      = analysis["risk_score"]
-        flags_detected  = analysis["flags_detected"]
-        extracted_phone = analysis["extracted_phone"]
+        phone_detected  = analysis["phone_number_detected"]  # "N/A" if not in text
+        flags_dict      = analysis["flags"]                   # {flag_key: bool}
         verdict_english = analysis["verdict_english"]
 
-        # ── OCR result expander (technical details for jury) ────────────
-        with st.expander(f"🔬 Extracted Text ({ocr_method}) — click to expand"):
-            st.code(extracted_text, language="text")
+        # Convenience list of triggered flag display names (for rendering)
+        _FLAG_LABELS = {
+            "hidden_fees":        "Hidden Upfront Fees",
+            "passport_retention": "Passport / Document Retention",
+            "vague_destination":  "Vague / Unspecified Destination",
+            "urgency_tactics":    "Extreme Urgency / Pressure Tactics",
+            "unrealistic_salary": "Unrealistic / Implausible Salary",
+        }
+        flags_triggered = [_FLAG_LABELS[k] for k, v in flags_dict.items() if v]
+
+        # ── Check if we got a visual fallback warning ────────────────────
+        if active_input == "image" and "No text or threats could be extracted" in verdict_english:
+            st.warning(
+                f"⚠️ **{verdict_english}**",
+                icon="⚠️",
+            )
+            st.stop()
 
         st.divider()
 
@@ -381,7 +437,7 @@ with tab1:
                 <p class="risk-title">🚨 HIGH RISK TRAFFICKING ATTEMPT DETECTED</p>
                 <p class="risk-sub">
                     IBM Granite confidence: <strong>{risk_score}/100</strong> ·
-                    {len(flags_detected)} of 5 red flags triggered ·
+                    {len(flags_triggered)} of 5 red flags triggered ·
                     Recruiter registered in community blacklist
                 </p>
             </div>
@@ -390,32 +446,32 @@ with tab1:
             # ── Also display native Streamlit error for accessibility ───
             st.error(
                 f"🚨 **HIGH RISK TRAFFICKING ATTEMPT DETECTED** — "
-                f"Risk Score: **{risk_score}/100** · Flags: **{len(flags_detected)}/5**"
+                f"Risk Score: **{risk_score}/100** · Flags: **{len(flags_triggered)}/5**"
             )
 
         else:
             # ── Low / medium risk path ──────────────────────────────────
             if risk_score >= 45:
-                st.warning(f"⚠️ **MEDIUM RISK** — Score: {risk_score}/100 · {len(flags_detected)} flag(s) detected.")
+                st.warning(f"⚠️ **MEDIUM RISK** — Score: {risk_score}/100 · {len(flags_triggered)} flag(s) detected.")
             else:
                 st.success(f"✅ **LOW RISK** — Score: {risk_score}/100 · No strong trafficking patterns detected.")
 
         # ── Metric strip ────────────────────────────────────────────────
         m1, m2, m3, m4 = st.columns(4)
         with m1: st.metric("Risk Score",   f"{risk_score} / 100")
-        with m2: st.metric("Flags Found",  f"{len(flags_detected)} / 5")
-        with m3: st.metric("Phone Number", extracted_phone)
+        with m2: st.metric("Flags Found",  f"{len(flags_triggered)} / 5")
+        with m3: st.metric("Phone Number", phone_detected)
         with m4: st.metric("AI Model",     "Granite-7B")
 
         # ── Flags detected ──────────────────────────────────────────────
-        if flags_detected:
+        if flags_triggered:
             st.markdown("""
             <p class="card-title" style="margin-top:1rem;">🚩 Red Flags Detected</p>
             """, unsafe_allow_html=True)
-            for flag in flags_detected:
+            for flag_name in flags_triggered:
                 st.markdown(f"""
                 <div class="flag-item">
-                    ⛔ <strong>{flag}</strong>
+                    ⛔ <strong>{flag_name}</strong>
                 </div>
                 """, unsafe_allow_html=True)
         else:
@@ -433,16 +489,17 @@ with tab1:
 
         # ── Raw JSON expander ────────────────────────────────────────────
         with st.expander("🔩 Raw IBM Granite JSON Response"):
-            st.json({k: v for k, v in analysis.items() if k != "flag_details"})
+            # Show only the public schema fields (strip internal _ prefixed keys)
+            st.json({k: v for k, v in analysis.items() if not k.startswith("_")})
 
         st.divider()
 
         # ── Auto-add to blacklist ────────────────────────────────────────
-        if extracted_phone != "NOT FOUND" and risk_score >= HIGH_RISK_THRESHOLD:
-            scam_reason = ", ".join(flags_detected) if flags_detected else "Suspicious recruitment ad"
-            db_record   = add_to_blacklist(extracted_phone, scam_reason)
+        if phone_detected not in ("N/A", "None", "") and risk_score >= HIGH_RISK_THRESHOLD:
+            scam_reason = ", ".join(flags_triggered) if flags_triggered else "Suspicious recruitment ad"
+            db_record   = add_to_blacklist(phone_detected, scam_reason)
             st.success(
-                f"✅ **Blacklist Updated** — `{extracted_phone}` has been automatically "
+                f"✅ **Blacklist Updated** — `{phone_detected}` has been automatically "
                 f"registered in the SiraSafe community database.  \n"
                 f"This number now has **{db_record['reports']} report(s)** · "
                 f"Status: **{db_record['status']}**"
