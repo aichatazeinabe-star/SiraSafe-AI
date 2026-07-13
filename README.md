@@ -3,9 +3,9 @@
 
 ---
 
-### 🌍 IMPORTANT NOTE FOR IBM TECHNICAL REVIEWERS
+###  IMPORTANT NOTE FOR IBM TECHNICAL REVIEWERS
 
-> 💡 **Ready for Live Production Testing:** 
+> **Ready for Live Production Testing:** 
 > Due to regional billing and geographic restrictions on IBM Cloud registration in West Africa, a live personal production API key is not pre-activated. 
 > 
 > However, **the authentic IBM watsonx.ai production pipeline is fully implemented, coded, and operational.** 
