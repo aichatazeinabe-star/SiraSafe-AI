@@ -1,4 +1,5 @@
 # SiraSafe AI — IBM Call for Code 2026
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 SiraSafe AI is a community-led early warning platform that protects vulnerable West African youth from online human trafficking. Powered by IBM Granite via watsonx.ai on IBM Cloud, the solution parses suspicious recruitment ads from social media screenshots and triggers instant offline voice alerts in local languages like Bambara.
 
@@ -9,6 +10,7 @@ SiraSafe AI is a community-led early warning platform that protects vulnerable W
 - **Offline Edge AI Simulation:** Designed to function fully offline directly on mobile devices to survive in remote, low-connectivity conflict zones.
 - **Local Language Inclusivity:** Generates clear, automated spoken alerts in Bambara to protect survivors regardless of literacy levels.
 - **Centralized Community Blacklist:** Instantly logs flagged recruiter numbers into a secure database to protect the wider community.
+- **Robust Local Evaluation Fallback:** Includes an interactive local simulation panel (Sidebar Mock) and direct text parsing to test max-risk scenarios instantly, ensuring full evaluative resilience even without active IBM Cloud API credentials.
 
 ---
 
@@ -21,7 +23,7 @@ Make sure you have Python 3.10 or higher installed on your system.
 
 ### 2. Clone the Repository
 ```bash
-git clone [https://github.com/aichatazeinabe-star/SiraSafe-AI.git](https://github.com/aichatazeinabe-star/SiraSafe-AI.git)
+git clone https://github.com/aichatazeinabe-star/SiraSafe-AI.git
 cd SiraSafe-AI
 ```
 
@@ -41,16 +43,19 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-### 5. Environment Variables Setup
-Create a .env file at the root of the project to add your IBM watsonx.ai credentials (this file is securely ignored by git via .gitignore):
+### 5. Environment Variables & Simulation Setup
+Create a `.env` file at the root of the project to add your IBM watsonx.ai credentials (this file is securely ignored by git via `.gitignore`):
 ```text
 WATSONX_APIKEY=your_ibm_watsonx_api_key_here
 PROJECT_ID=your_ibm_project_id_here
 ```
+
+Note for Evaluation (No API Key Required): If you do not have active IBM Watsonx API credentials or encounter authentication limits, the application will automatically activate the Local Vision Simulation.
+Use the control panel in the Sidebar to toggle through different simulated scenarios (e.g., Trafficking Attempt, Legitimate Offer) or switch to the "Paste Recruitment Text Directly" tab to test the semantic model's real-time risk assessment without any cloud dependency.
 
 ### 6. Run the Application
 Launch the Streamlit web dashboard locally:
 ```bash
 streamlit run app.py
 ```
-The application will automatically open in your default browser at http://localhost:8501.
+The application will automatically open in your default browser at http://localhost:8502.
